@@ -8,19 +8,6 @@ from typing import Any, Coroutine
 from aiohttp import ClientSession
 
 
-VERBOSE = True
-SEGMENTS_CACHE = "parsed_segments.pickle"
-SEGMENTS_DIR = "segments"
-FILELIST_PATH = "filelist.txt"
-OUTPUT_FILE = "output.mp4"
-FORCE_COMBINE = True
-
-if VERBOSE:
-    vprint = lambda *args: print(*args)
-else:
-    vprint = lambda *_: None
-
-
 async def download_m3u8(
     session: ClientSession,
     url: str,
@@ -28,6 +15,7 @@ async def download_m3u8(
     force_ext: str | None = None,
     cache: bool = False
 ) -> Coroutine[Any, Any, list[dict[str, str]]]:
+    global SEGMENTS_CACHE
 
     vprint("Downloading .m3u8")
 
@@ -83,6 +71,8 @@ def parse_m3u8(m3u8_data: str, force_url_prefix: str = "", force_ext: str | None
 
 
 async def download_segment(session: ClientSession, segment: dict[str, str]) -> Coroutine[Any, Any, bool]:
+    global SEGMENTS_DIR
+
     vprint(f"Downloading segment {segment['filename']}...")
 
     fname = segment['filename']
@@ -106,6 +96,8 @@ async def download_segment(session: ClientSession, segment: dict[str, str]) -> C
 
 
 def combine(ffmpeg_path: str = "ffmpeg", remove_filelist: bool = True):
+    global FILELIST_PATH, OUTPUT_FILE
+
     vprint("Combining segments...")
 
     system(
@@ -118,19 +110,16 @@ def combine(ffmpeg_path: str = "ffmpeg", remove_filelist: bool = True):
     vprint("Combining segments finished...")
 
 
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
-}
+async def main(url: str, force_ext: str | None = None, force_url_prefix: str = "") -> None:
+    global SEGMENTS_DIR, HEADERS, FORCE_COMBINE, FILELIST_PATH
 
-
-async def main():
     makedirs(SEGMENTS_DIR, exist_ok=True)
 
     async with ClientSession() as session:
         session.headers.update(HEADERS)
 
         url = 'some_url.m3u8'
-        segments = await download_m3u8(session, url, force_ext='.ts')
+        segments = await download_m3u8(session, url, force_ext, force_url_prefix)
 
         tasks = [download_segment(session, segment)
                  for segment in segments[:2]]
@@ -154,5 +143,67 @@ async def main():
 
         combine(remove_filelist=False)
 
+# I'm too lazy to create CLI for this
+# So you better at least have all configs in one place
 
-asyncio.run(main())
+
+# Prints all the logs
+VERBOSE = False
+
+if VERBOSE:
+    vprint = lambda *args: print(*args)
+else:
+    vprint = lambda *_: None
+
+# Path where parsed .m3u8 will be saved
+SEGMENTS_CACHE = "parsed_segments.pickle"
+
+# Path where segments will be downloaded
+SEGMENTS_DIR = "segments"
+
+# Path where filelist will be saved (required for ffmpeg)
+FILELIST_PATH = "filelist.txt"
+
+# Path where output video will be saved
+OUTPUT_FILE = "output.mp4"
+
+# Combine segments even if some failed to download
+FORCE_COMBINE = True
+
+# Some extra headers if the server is complaining about who you are
+HEADERS = {
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+}
+
+# A hint for parsing such headers is by going to Developers Console and
+# grabbing any request and copying it as CURL (bash).
+# Then go to https://curlconverter.com/ and convert it to python.
+# Then just copy-paste the headers here.
+
+# ----------------------------------------------
+
+# The url to the m3u8 file
+url = "some_url.m3u8"
+
+# ----------------------------------------------
+
+# Some m3u8's don't have any extension per segment
+# Here, you can enforce it.
+
+# Change to None to use automatic detection.
+# ("automatic" is a big word here -- it just copies 
+# everything after the last dot in the segment's url)
+force_ext = ".ts"
+
+# ----------------------------------------------
+
+# Some m3u8's provide relative urls to the segments (i.e. /segment1.ts)
+# Here, you can enforce the prefix
+force_url_prefix = ""
+
+asyncio.run(
+    main(
+        url=url,
+        force_ext=force_ext,
+        force_url_prefix=force_url_prefix)
+)
