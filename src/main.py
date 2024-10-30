@@ -25,26 +25,9 @@ async def download_m3u8(session: aiohttp.ClientSession, url, force_ext: str | No
     try:
         async with session.get(url) as response:
             response.raise_for_status()
-
-            extension = force_ext
-            segments = []
-            index = 1
-
             text = await response.text()
-            for url in text.splitlines():
-                if not url.startswith('#') and url:
-                    if not extension:
-                        extension = path.splitext(url)[1]
 
-                    key = f'{index}{extension}'
-                    if key in segments:
-                        raise Exception(f"Duplicate segment {key} in .m3u8")
-                    index += 1
-
-                    segments.append({
-                        "filename": key,
-                        "url": url
-                    })
+            segments = parse_m3u8(text, force_ext)
 
             if cache:
                 vprint("Caching .m3u8")
@@ -54,6 +37,32 @@ async def download_m3u8(session: aiohttp.ClientSession, url, force_ext: str | No
             return segments
     except:
         raise Exception("Failed to parse .m3u8")
+
+
+def parse_m3u8(m3u8_data: str, force_ext: str | None = None):
+    vprint("Parsing .m3u8")
+
+    extension = force_ext
+    segments = []
+    index = 1
+
+    for url in m3u8_data.splitlines():
+        if not url.startswith('#') and url:
+            if not extension:
+                extension = path.splitext(url)[1]
+
+            key = f'{index}{extension}'
+            if key in segments:
+                raise Exception(f"Duplicate segment {key} in .m3u8")
+            index += 1
+
+            segments.append({
+                "filename": key,
+                "url": url
+            })
+            
+    return segments
+
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
