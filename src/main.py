@@ -1,13 +1,16 @@
 import asyncio
 import pickle
-from os import path, makedirs
+
+from os import path, makedirs, system, remove
 
 import aiohttp
 
 
-VERBOSE = False
+VERBOSE = True
 SEGMENTS_CACHE = "parsed_segments.pickle"
 SEGMENTS_DIR = "segments"
+FILELIST_PATH = "filelist.txt"
+OUTPUT_FILE = "output.mp4"
 
 if VERBOSE:
     vprint = lambda *args: print(*args)
@@ -86,6 +89,18 @@ async def download_segment(session: aiohttp.ClientSession, segment: dict[str, st
 
     return False
 
+
+def combine(ffmpeg_path: str = "ffmpeg", remove_filelist: bool = True):
+    vprint("Combining segments...")
+    system(
+        f"{ffmpeg_path} -f concat -safe 0 -i {FILELIST_PATH} -c copy {OUTPUT_FILE}")
+
+    if remove_filelist:
+        vprint(f"Removing {FILELIST_PATH}...")
+        remove(FILELIST_PATH)
+
+    vprint("Combining segments finished...")
+
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
 }
@@ -102,7 +117,14 @@ async def main():
 
         tasks = [download_segment(session, segment)
                  for segment in segments[:2]]
-        await asyncio.gather(*tasks)
+        results = await asyncio.gather(*tasks)
+
+        if all(results):
+            print("All segments downloaded successfully!")
+        else:
+            print("Failed to download some segments")
+            
+        combine(remove_filelist=False)
 
 
 asyncio.run(main())
