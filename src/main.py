@@ -1,11 +1,12 @@
 import asyncio
+import pickle
 from os import path
-
 
 import aiohttp
 
 
 VERBOSE = True
+SEGMENTS_CACHE = "parsed_segments.pickle"
 
 if VERBOSE:
     vprint = lambda *args: print(*args)
@@ -13,8 +14,13 @@ else:
     vprint = lambda *_: None
 
 
-async def download_m3u8(session: aiohttp.ClientSession, url, force_ext: str | None = None):
+async def download_m3u8(session: aiohttp.ClientSession, url, force_ext: str | None = None, cache: bool = False):
     vprint("Downloading .m3u8")
+
+    if cache and path.exists("segments.m3u8"):
+        vprint("Using cached .m3u8")
+        with open(SEGMENTS_CACHE, "rb") as f:
+            return pickle.load(f)
 
     try:
         async with session.get(url) as response:
@@ -40,6 +46,11 @@ async def download_m3u8(session: aiohttp.ClientSession, url, force_ext: str | No
                         "url": url
                     })
 
+            if cache:
+                vprint("Caching .m3u8")
+                with open(SEGMENTS_CACHE, "wb") as f:
+                    pickle.dump(segments, f)
+
             return segments
     except:
         raise Exception("Failed to parse .m3u8")
@@ -52,7 +63,7 @@ HEADERS = {
 async def main():
     async with aiohttp.ClientSession() as session:
         session.headers.update(HEADERS)
-        
+
         url = 'some_url.m3u8'
         segments = await download_m3u8(session, url, force_ext='.ts')
         print(segments)
