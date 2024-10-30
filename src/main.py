@@ -5,11 +5,9 @@ from os import path, makedirs
 import aiohttp
 
 
-VERBOSE = True
+VERBOSE = False
 SEGMENTS_CACHE = "parsed_segments.pickle"
 SEGMENTS_DIR = "segments"
-
-makedirs(SEGMENTS_DIR, exist_ok=True)
 
 if VERBOSE:
     vprint = lambda *args: print(*args)
@@ -82,9 +80,11 @@ async def download_segment(session: aiohttp.ClientSession, segment: dict[str, st
                 f.write(content)
 
             vprint(f"Downloaded segment {fname}")
+            return True
     except Exception as e:
-        vprint(f"Failed to download segment {fname}: {e}")
+        print(f"Failed to download {fname} at {url}: ERROR {e}")
 
+    return False
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
@@ -92,13 +92,17 @@ HEADERS = {
 
 
 async def main():
+    makedirs(SEGMENTS_DIR, exist_ok=True)
+
     async with aiohttp.ClientSession() as session:
         session.headers.update(HEADERS)
 
         url = 'some_url.m3u8'
         segments = await download_m3u8(session, url, force_ext='.ts')
-        print(segments)
 
-        await download_segment(session, segments[0])
+        tasks = [download_segment(session, segment)
+                 for segment in segments[:2]]
+        await asyncio.gather(*tasks)
+
 
 asyncio.run(main())
