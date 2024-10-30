@@ -13,13 +13,12 @@ async def download_m3u8(
     url: str,
     force_url_prefix: str = "",
     force_ext: str | None = None,
-    cache: bool = False
 ) -> Coroutine[Any, Any, list[dict[str, str]]]:
     global SEGMENTS_CACHE
 
     vprint("Downloading .m3u8")
 
-    if cache and path.exists("segments.m3u8"):
+    if SEGMENTS_CACHE and path.exists("segments.m3u8"):
         vprint("Using cached .m3u8")
         with open(SEGMENTS_CACHE, "rb") as f:
             return pickle.load(f)
@@ -35,7 +34,7 @@ async def download_m3u8(
                 force_ext=force_ext
             )
 
-            if cache:
+            if SEGMENTS_CACHE:
                 vprint("Caching .m3u8")
                 with open(SEGMENTS_CACHE, "wb") as f:
                     pickle.dump(segments, f)
@@ -155,8 +154,10 @@ if VERBOSE:
 else:
     vprint = lambda *_: None
 
-# Path where parsed .m3u8 will be saved
-SEGMENTS_CACHE = "parsed_segments.pickle"
+# Path where parsed .m3u8 will be saved.
+# Change to None if you don't want to cache.
+# SEGMENTS_CACHE = "segments.pickle"
+SEGMENTS_CACHE = None
 
 # Path where segments will be downloaded
 SEGMENTS_DIR = "segments"
