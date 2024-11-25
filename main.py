@@ -1,6 +1,7 @@
 import re
 import asyncio
 import pickle
+import argparse
 
 from os import path, makedirs, system, remove
 from typing import Any, Coroutine
@@ -109,19 +110,62 @@ def combine(ffmpeg_path: str = "ffmpeg", remove_filelist: bool = True):
     vprint("Combining segments finished...")
 
 
-async def main(url: str, force_ext: str | None = None, force_url_prefix: str = "") -> None:
-    global SEGMENTS_DIR, HEADERS, FORCE_COMBINE, FILELIST_PATH
+def parse_args():
+    parser = argparse.ArgumentParser(description='Download and combine M3U8 segments')
+    parser.add_argument('url', help='URL to the m3u8 file')
+    parser.add_argument('--output', '-o', default='output.mp4',
+                      help='Output file path (default: output.mp4)')
+    parser.add_argument('--segments-dir', default='segments',
+                      help='Directory to store segments (default: segments)')
+    parser.add_argument('--force-ext', 
+                      help='Force specific extension for segments (e.g., .ts)')
+    parser.add_argument('--force-url-prefix', default='',
+                      help='Force URL prefix for segments')
+    parser.add_argument('--segments-cache', 
+                      help='Path to cache parsed m3u8 (disabled by default)')
+    parser.add_argument('--filelist', default='filelist.txt',
+                      help='Path for ffmpeg filelist (default: filelist.txt)')
+    parser.add_argument('--force-combine', action='store_true',
+                      help='Combine segments even if some failed to download')
+    parser.add_argument('--verbose', '-v', action='store_true',
+                      help='Enable verbose output')
+    parser.add_argument('--user-agent',
+                      default='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36',
+                      help='User-Agent header for requests')
+    return parser.parse_args()
 
+
+async def main(args: argparse.Namespace) -> None:
+    global vprint, SEGMENTS_DIR, FILELIST_PATH, OUTPUT_FILE, SEGMENTS_CACHE, FORCE_COMBINE
+    
+    # Configure verbose printing
+    vprint = print if args.verbose else lambda *_: None
+    
+    # Create segments directory
+    SEGMENTS_DIR = args.segments_dir
     makedirs(SEGMENTS_DIR, exist_ok=True)
 
-    async with ClientSession() as session:
-        session.headers.update(HEADERS)
+    FILELIST_PATH = args.filelist
+    OUTPUT_FILE = args.output
+    SEGMENTS_CACHE = args.segments_cache
+    FORCE_COMBINE = args.force_combine
 
-        url = 'some_url.m3u8'
-        segments = await download_m3u8(session, url, force_ext, force_url_prefix)
+    headers = {
+        "User-Agent": args.user_agent
+    }
+
+    async with ClientSession() as session:
+        session.headers.update(headers)
+
+        segments = await download_m3u8(
+            session, 
+            args.url, 
+            force_url_prefix=args.force_url_prefix,
+            force_ext=args.force_ext
+        )
 
         tasks = [download_segment(session, segment)
-                 for segment in segments[:2]]
+                for segment in segments]
         results = await asyncio.gather(*tasks)
 
         if all([i[0] for i in results]):
@@ -129,7 +173,7 @@ async def main(url: str, force_ext: str | None = None, force_url_prefix: str = "
         else:
             print("Failed to download some segments")
 
-        if not FORCE_COMBINE:
+        if not FORCE_COMBINE and not all([i[0] for i in results]):
             return
 
         results.sort(key=lambda x: int(
@@ -142,69 +186,6 @@ async def main(url: str, force_ext: str | None = None, force_url_prefix: str = "
 
         combine(remove_filelist=False)
 
-# I'm too lazy to create CLI for this
-# So you better at least have all configs in one place
-
-
-# Prints all the logs
-VERBOSE = False
-
-if VERBOSE:
-    vprint = lambda *args: print(*args)
-else:
-    vprint = lambda *_: None
-
-# Path where parsed .m3u8 will be saved.
-# Change to None if you don't want to cache.
-# SEGMENTS_CACHE = "segments.pickle"
-SEGMENTS_CACHE = None
-
-# Path where segments will be downloaded
-SEGMENTS_DIR = "segments"
-
-# Path where filelist will be saved (required for ffmpeg)
-FILELIST_PATH = "filelist.txt"
-
-# Path where output video will be saved
-OUTPUT_FILE = "output.mp4"
-
-# Combine segments even if some failed to download
-FORCE_COMBINE = True
-
-# Some extra headers if the server is complaining about who you are
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
-}
-
-# A hint for parsing such headers is by going to Developers Console and
-# grabbing any request and copying it as CURL (bash).
-# Then go to https://curlconverter.com/ and convert it to python.
-# Then just copy-paste the headers here.
-
-# ----------------------------------------------
-
-# The url to the m3u8 file
-url = "some_url.m3u8"
-
-# ----------------------------------------------
-
-# Some m3u8's don't have any extension per segment
-# Here, you can enforce it.
-
-# Change to None to use automatic detection.
-# ("automatic" is a big word here -- it just copies 
-# everything after the last dot in the segment's url)
-force_ext = ".ts"
-
-# ----------------------------------------------
-
-# Some m3u8's provide relative urls to the segments (i.e. /segment1.ts)
-# Here, you can enforce the prefix
-force_url_prefix = ""
-
-asyncio.run(
-    main(
-        url=url,
-        force_ext=force_ext,
-        force_url_prefix=force_url_prefix)
-)
+if __name__ == "__main__":
+    args = parse_args()
+    asyncio.run(main(args))
