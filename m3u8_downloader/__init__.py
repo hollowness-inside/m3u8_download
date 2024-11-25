@@ -1,7 +1,7 @@
 from .downloader import download_m3u8, download_segment
 from .parser import parse_m3u8
 from .combiner import combine_segments
-from .utils import load_headers, vprint
+from .utils import load_headers, Config, vprint
 
 __all__ = [
     'download_m3u8',
@@ -9,5 +9,6 @@ __all__ = [
     'parse_m3u8',
     'combine_segments',
     'load_headers',
+    'Config',
     'vprint'
 ]

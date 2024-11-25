@@ -2,9 +2,22 @@ import json
 from os import path
 
 
+class Config:
+    _verbose = False
+
+    @classmethod
+    def set_verbose(cls, verbose: bool):
+        cls._verbose = verbose
+
+    @classmethod
+    def is_verbose(cls) -> bool:
+        return cls._verbose
+
+
 def vprint(*args):
-    """Verbose print function. Will be replaced at runtime based on verbose flag."""
-    pass
+    """Verbose print function that uses the Config class to determine verbosity."""
+    if Config.is_verbose():
+        print(*args)
 
 
 def load_headers(header_file: str | None) -> dict:

@@ -11,8 +11,8 @@ from m3u8_downloader import (
     download_segment,
     combine_segments,
     load_headers,
-    vprint as _vprint
 )
+from m3u8_downloader.utils import Config, vprint
 
 
 def parse_args():
@@ -43,8 +43,7 @@ def parse_args():
 
 async def main(args: argparse.Namespace) -> None:
     # Configure verbose printing
-    global vprint
-    vprint = print if args.verbose else lambda *_: None
+    Config.set_verbose(args.verbose)
     
     # Create segments directory
     makedirs(args.segments_dir, exist_ok=True)
