@@ -36,9 +36,20 @@ python main.py "https://example.com/video.m3u8"
 python main.py "https://example.com/video.m3u8" --combine output.mp4
 ```
 
+### Download and force combine into MP4:
+In case some segments fail to download, use --force-combine to combine the downloaded segments anyway:
+```bash
+python main.py "https://example.com/video.m3u8" --force-combine output.mp4
+```
+
 ### Download with custom headers (e.g., for authentication):
 ```bash
 python main.py "https://example.com/video.m3u8" --headers headers.json --combine output.mp4
+```
+
+### Fix missing segments in a directory:
+```bash
+python main.py "https://example.com/video.m3u8" --fix segments
 ```
 
 ### Force specific extension for segments:
@@ -71,6 +82,7 @@ Optional arguments:
   --combine OUTPUT     Combine segments into OUTPUT file after download
   --force-combine OUTPUT  Combine segments even if some failed to download
   --cleanup           Remove segments directory after successful combination
+  --fix DIR          Fix missing segments in the specified directory (default: segments)
   --verbose, -v       Enable verbose output
   --headers FILE      Path to JSON file containing request headers
   --limit N          Limit the number of segments to download
@@ -88,6 +100,10 @@ The headers file should be a JSON file containing key-value pairs of HTTP header
     "Authorization": "Bearer token123"
 }
 ```
+
+## Helpful Tips
+
+The easiest way to get headers is to use a browser's "Inspect" feature and copy any request on the website as `Copy as cURL (bash)`. Then, go to `https://curlconverter.com/json/` and paste the cURL there. You will see the "headers" field in the resulting JSON.
 
 ## Requirements
 
