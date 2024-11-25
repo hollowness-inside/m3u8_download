@@ -38,6 +38,8 @@ def parse_args():
                       help='Enable verbose output')
     parser.add_argument('--headers',
                       help='Path to JSON file containing request headers')
+    parser.add_argument('--limit', type=int,
+                      help='Limit the number of segments to download')
     return parser.parse_args()
 
 
@@ -61,6 +63,11 @@ async def main(args: argparse.Namespace) -> None:
             force_ext=args.force_ext
         )
 
+        # Apply segment limit if specified
+        if args.limit:
+            vprint(f"Limiting download to first {args.limit} segments")
+            segments = segments[:args.limit]
+
         tasks = [download_segment(session, segment, args.segments_dir)
                 for segment in segments]
         results = await asyncio.gather(*tasks)
@@ -70,7 +77,8 @@ async def main(args: argparse.Namespace) -> None:
             print("All segments downloaded successfully!")
         else:
             failed_count = len([x for x in successful_downloads if not x])
-            print(f"Failed to download {failed_count} segments")
+            total_count = len(segments)
+            print(f"Failed to download {failed_count} out of {total_count} segments")
 
         # Stop here if no combination is requested (neither --combine nor --force-combine)
         # or if there are failures and force combine is not set
