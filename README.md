@@ -1,82 +1,100 @@
 # m3u8_download
 
-Downloads segments from .m3u8 files and combines into a single video using ffmpeg.
+Downloads segments from .m3u8 files and combines them into a single video using ffmpeg.
 
-I'm planning to write a CLI for this but am too lazy right now.
+## Features
 
-- **Extremely Fast** by utilizing the [asyncio](https://docs.python.org/3/library/asyncio.html) library.
-- **Somewhat customizable** - you can enforce segment extensions and enforce a url prefix if m3u8 contains relative urls.
+- **Extremely Fast**: Utilizes [asyncio](https://docs.python.org/3/library/asyncio.html) and concurrent downloads
+- **Configurable**: Control concurrent downloads, segment extensions, URL prefixes, and more
+- **Caching**: Optional caching of parsed m3u8 files for faster subsequent runs
+- **Flexible**: Supports both relative and absolute URLs in m3u8 files
+- **Robust**: Handles failed downloads gracefully with options to force combine or skip
 
-## Installation
-- Install [aiohttp](https://pypi.org/project/aiohttp/)
-> pip install aiohttp
+## Quick Start
 
-## Usage
-
-Check out the end of the `main.py`.
-There you will find all the required configurations.
-
-```python
-# Prints all the logs
-VERBOSE = False
-
-if VERBOSE:
-    vprint = lambda *args: print(*args)
-else:
-    vprint = lambda *_: None
-
-# Path where parsed .m3u8 will be saved.
-# Change to None if you don't want to cache.
-# SEGMENTS_CACHE = "segments.pickle"
-SEGMENTS_CACHE = None
-
-# Path where segments will be downloaded
-SEGMENTS_DIR = "segments"
-
-# Path where filelist will be saved (required for ffmpeg)
-FILELIST_PATH = "filelist.txt"
-
-# Path where output video will be saved
-OUTPUT_FILE = "output.mp4"
-
-# Combine segments even if some failed to download
-FORCE_COMBINE = True
-
-# Some extra headers if the server is complaining about who you are
-HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
-}
-
-# A hint for parsing such headers is by going to Developers Console and
-# grabbing any request and copying it as CURL (bash).
-# Then go to https://curlconverter.com/ and convert it to python.
-# Then just copy-paste the headers here.
-
-# ----------------------------------------------
-
-# The url to the m3u8 file
-url = "some_url.m3u8"
-
-# ----------------------------------------------
-
-# Some m3u8's don't have any extension per segment
-# Here, you can enforce it.
-
-# Change to None to use automatic detection.
-# ("automatic" is a big word here -- it just copies 
-# everything after the last dot in the segment's url)
-force_ext = ".ts"
-
-# ----------------------------------------------
-
-# Some m3u8's provide relative urls to the segments (i.e. /segment1.ts)
-# Here, you can enforce the prefix
-force_url_prefix = ""
-
-asyncio.run(
-    main(
-        url=url,
-        force_ext=force_ext,
-        force_url_prefix=force_url_prefix)
-)
+1. Install dependencies:
+```bash
+pip install aiohttp
 ```
+
+2. Make sure ffmpeg is installed and available in your PATH (or specify custom path with --ffmpeg)
+
+3. Basic usage - download and combine segments:
+```bash
+python main.py "https://example.com/video.m3u8" --combine output.mp4
+```
+
+## Usage Examples
+
+### Download segments only:
+```bash
+python main.py "https://example.com/video.m3u8"
+```
+
+### Download and combine into MP4:
+```bash
+python main.py "https://example.com/video.m3u8" --combine output.mp4
+```
+
+### Download with custom headers (e.g., for authentication):
+```bash
+python main.py "https://example.com/video.m3u8" --headers headers.json --combine output.mp4
+```
+
+### Force specific extension for segments:
+```bash
+python main.py "https://example.com/video.m3u8" --force-ext .ts --combine output.mp4
+```
+
+### Use custom ffmpeg path:
+```bash
+python main.py "https://example.com/video.m3u8" --ffmpeg /path/to/ffmpeg --combine output.mp4
+```
+
+### Limit concurrent downloads:
+```bash
+python main.py "https://example.com/video.m3u8" --concurrent 5 --combine output.mp4
+```
+
+## Command Line Options
+
+```
+Arguments:
+  url                   URL to the m3u8 file
+
+Optional arguments:
+  --segments-dir DIR    Directory to store segments (default: segments)
+  --force-ext EXT      Force specific extension for segments (e.g., .ts)
+  --force-url-prefix PREFIX  Force URL prefix for segments
+  --cache FILE         Path to cache parsed m3u8
+  --filelist FILE      Path for ffmpeg filelist (default: filelist.txt)
+  --combine OUTPUT     Combine segments into OUTPUT file after download
+  --force-combine OUTPUT  Combine segments even if some failed to download
+  --cleanup           Remove segments directory after successful combination
+  --verbose, -v       Enable verbose output
+  --headers FILE      Path to JSON file containing request headers
+  --limit N          Limit the number of segments to download
+  --concurrent N     Number of concurrent downloads (default: 10)
+  --ffmpeg PATH      Path to ffmpeg executable (default: uses ffmpeg from system PATH)
+```
+
+## Headers File Format
+
+The headers file should be a JSON file containing key-value pairs of HTTP headers:
+
+```json
+{
+    "User-Agent": "Mozilla/5.0 ...",
+    "Authorization": "Bearer token123"
+}
+```
+
+## Requirements
+
+- Python 3.6+
+- aiohttp
+- ffmpeg (in PATH or specified via --ffmpeg)
+
+## License
+
+This project is open source and available under the MIT License.
