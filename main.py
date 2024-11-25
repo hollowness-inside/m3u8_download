@@ -63,6 +63,10 @@ def parse_args():
         default=10,
         help="Number of concurrent downloads (default: 10)",
     )
+    parser.add_argument(
+        "--ffmpeg",
+        help="Path to ffmpeg executable (default: uses ffmpeg from system PATH)",
+    )
     return parser.parse_args()
 
 
@@ -126,7 +130,7 @@ async def main(args: argparse.Namespace) -> None:
                     f.write(f"file {fname}\n")
 
         try:
-            combine_segments(args.filelist, output_file, remove_filelist=args.cleanup)
+            combine_segments(args.filelist, output_file, ffmpeg_path=args.ffmpeg, remove_filelist=args.cleanup)
             if args.cleanup:
                 # Only cleanup if combination was successful
                 vprint(f"Cleaning up segments directory {args.segments_dir}...")
