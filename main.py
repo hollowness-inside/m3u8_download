@@ -56,7 +56,9 @@ def parse_args():
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
     parser.add_argument(
-        "--headers", help="Path to JSON file containing request headers"
+        "--headers", 
+        metavar="FILE",
+        help="Path to JSON file containing request headers"
     )
     parser.add_argument(
         "--limit", type=int, help="Limit the number of segments to download"
