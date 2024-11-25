@@ -90,7 +90,7 @@ async def main(args: argparse.Namespace) -> None:
                     f.write(f"file {fname}\n")
 
         try:
-            combine_segments(args.filelist, args.output, remove_filelist=True)
+            combine_segments(args.filelist, args.output, remove_filelist=args.cleanup)
             if args.cleanup:
                 # Only cleanup if combination was successful
                 vprint(f"Cleaning up segments directory {args.segments_dir}...")
