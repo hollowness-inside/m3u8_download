@@ -2,6 +2,7 @@ import pickle
 from os import path
 from typing import Any, Coroutine
 
+import asyncio
 from aiohttp import ClientSession
 
 from .parser import parse_m3u8
@@ -64,3 +65,20 @@ async def download_segment(
         print(f"Failed to download {fname} : {e}")
 
     return [False, fout]
+
+
+async def download_batch(
+    session: ClientSession,
+    segments: list,
+    segments_dir: str,
+    semaphore: asyncio.Semaphore,
+) -> list:
+    """Download a batch of segments with concurrency control."""
+
+    async def download_with_semaphore(segment):
+        async with semaphore:
+            return await download_segment(session, segment, segments_dir)
+
+    return await asyncio.gather(
+        *[download_with_semaphore(segment) for segment in segments]
+    )

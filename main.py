@@ -4,15 +4,11 @@ import argparse
 import shutil
 from os import path, makedirs
 
-from aiohttp import ClientSession
+from aiohttp import ClientSession, TCPConnector
 
-from m3u8_downloader import (
-    download_m3u8,
-    download_segment,
-    combine_segments,
-    load_headers,
-)
-from m3u8_downloader.utils import Config, vprint
+from m3u8_downloader.combiner import combine_segments
+from m3u8_downloader.downloader import download_m3u8, download_batch
+from m3u8_downloader.utils import Config, vprint, load_headers
 
 
 def parse_args():
@@ -56,12 +52,16 @@ def parse_args():
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
     parser.add_argument(
-        "--headers", 
-        metavar="FILE",
-        help="Path to JSON file containing request headers"
+        "--headers", metavar="FILE", help="Path to JSON file containing request headers"
     )
     parser.add_argument(
         "--limit", type=int, help="Limit the number of segments to download"
+    )
+    parser.add_argument(
+        "--concurrent",
+        type=int,
+        default=10,
+        help="Number of concurrent downloads (default: 10)",
     )
     return parser.parse_args()
 
@@ -75,9 +75,14 @@ async def main(args: argparse.Namespace) -> None:
 
     headers = load_headers(args.headers)
 
-    async with ClientSession() as session:
-        session.headers.update(headers)
+    # Configure connection pooling and reuse
+    connector = TCPConnector(
+        limit=args.concurrent,  # Limit number of concurrent connections
+        force_close=False,  # Enable connection reuse
+        enable_cleanup_closed=True,  # Clean up closed connections
+    )
 
+    async with ClientSession(connector=connector, headers=headers) as session:
         segments = await download_m3u8(
             session,
             args.url,
@@ -91,11 +96,9 @@ async def main(args: argparse.Namespace) -> None:
             vprint(f"Limiting download to first {args.limit} segments")
             segments = segments[: args.limit]
 
-        tasks = [
-            download_segment(session, segment, args.segments_dir)
-            for segment in segments
-        ]
-        results = await asyncio.gather(*tasks)
+        # Create semaphore for concurrency control
+        semaphore = asyncio.Semaphore(args.concurrent)
+        results = await download_batch(session, segments, args.segments_dir, semaphore)
 
         successful_downloads = [i[0] for i in results]
         if all(successful_downloads):
