@@ -2,6 +2,7 @@ import re
 import asyncio
 import pickle
 import argparse
+import json
 
 from os import path, makedirs, system, remove
 from typing import Any, Coroutine
@@ -110,6 +111,22 @@ def combine(ffmpeg_path: str = "ffmpeg", remove_filelist: bool = True):
     vprint("Combining segments finished...")
 
 
+def load_headers(header_file: str | None) -> dict:
+    """Load headers from a JSON file or return default headers."""
+    if header_file and path.exists(header_file):
+        try:
+            with open(header_file, 'r') as f:
+                return json.load(f)
+        except json.JSONDecodeError:
+            print(f"Warning: Failed to parse header file {header_file}. Using default headers.")
+        except Exception as e:
+            print(f"Warning: Error reading header file {header_file}: {e}. Using default headers.")
+    
+    return {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36"
+    }
+
+
 def parse_args():
     parser = argparse.ArgumentParser(description='Download and combine M3U8 segments')
     parser.add_argument('url', help='URL to the m3u8 file')
@@ -129,9 +146,8 @@ def parse_args():
                       help='Combine segments even if some failed to download')
     parser.add_argument('--verbose', '-v', action='store_true',
                       help='Enable verbose output')
-    parser.add_argument('--user-agent',
-                      default='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.150 Safari/537.36',
-                      help='User-Agent header for requests')
+    parser.add_argument('--headers',
+                      help='Path to JSON file containing request headers')
     return parser.parse_args()
 
 
@@ -150,9 +166,7 @@ async def main(args: argparse.Namespace) -> None:
     SEGMENTS_CACHE = args.segments_cache
     FORCE_COMBINE = args.force_combine
 
-    headers = {
-        "User-Agent": args.user_agent
-    }
+    headers = load_headers(args.headers)
 
     async with ClientSession() as session:
         session.headers.update(headers)
