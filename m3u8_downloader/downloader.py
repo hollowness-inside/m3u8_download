@@ -38,7 +38,7 @@ async def download_m3u8(
                     pickle.dump(segments, f)
 
             return segments
-    except:
+    except Exception:
         raise Exception("Failed to parse .m3u8")
 
 
