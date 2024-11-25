@@ -1,6 +1,7 @@
 import re
 import asyncio
 import argparse
+import shutil
 from os import path, makedirs
 
 from aiohttp import ClientSession
@@ -29,8 +30,12 @@ def parse_args():
                       help='Path to cache parsed m3u8 (disabled by default)')
     parser.add_argument('--filelist', default='filelist.txt',
                       help='Path for ffmpeg filelist (default: filelist.txt)')
+    parser.add_argument('--combine', action='store_true',
+                      help='Combine segments into a single file after download')
     parser.add_argument('--force-combine', action='store_true',
                       help='Combine segments even if some failed to download')
+    parser.add_argument('--cleanup', action='store_true',
+                      help='Remove segments directory after successful combination')
     parser.add_argument('--verbose', '-v', action='store_true',
                       help='Enable verbose output')
     parser.add_argument('--headers',
@@ -63,12 +68,17 @@ async def main(args: argparse.Namespace) -> None:
                 for segment in segments]
         results = await asyncio.gather(*tasks)
 
-        if all([i[0] for i in results]):
+        successful_downloads = [i[0] for i in results]
+        if all(successful_downloads):
             print("All segments downloaded successfully!")
         else:
-            print("Failed to download some segments")
+            failed_count = len([x for x in successful_downloads if not x])
+            print(f"Failed to download {failed_count} segments")
 
-        if not args.force_combine and not all([i[0] for i in results]):
+        # Stop here if no combination is requested (neither --combine nor --force-combine)
+        # or if there are failures and force combine is not set
+        should_combine = args.combine or args.force_combine
+        if not should_combine or (not args.force_combine and not all(successful_downloads)):
             return
 
         results.sort(key=lambda x: int(
@@ -79,7 +89,15 @@ async def main(args: argparse.Namespace) -> None:
                 if success:
                     f.write(f"file {fname}\n")
 
-        combine_segments(args.filelist, args.output, remove_filelist=False)
+        try:
+            combine_segments(args.filelist, args.output, remove_filelist=True)
+            if args.cleanup:
+                # Only cleanup if combination was successful
+                vprint(f"Cleaning up segments directory {args.segments_dir}...")
+                shutil.rmtree(args.segments_dir)
+        except Exception as e:
+            print(f"Failed to combine segments: {e}")
+            return
 
 
 if __name__ == "__main__":
