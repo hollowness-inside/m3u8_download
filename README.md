@@ -74,20 +74,20 @@ Arguments:
   url                   URL to the m3u8 file
 
 Optional arguments:
-  --segments-dir DIR    Directory to store segments (default: segments)
-  --force-ext EXT      Force specific extension for segments (e.g., .ts)
-  --force-url-prefix PREFIX  Force URL prefix for segments
-  --cache FILE         Path to cache parsed m3u8
-  --filelist FILE      Path for ffmpeg filelist (default: filelist.txt)
-  --combine OUTPUT     Combine segments into OUTPUT file after download
-  --force-combine OUTPUT  Combine segments even if some failed to download
-  --cleanup           Remove segments directory after successful combination
-  --fix DIR          Fix missing segments in the specified directory (default: segments)
-  --verbose, -v       Enable verbose output
-  --headers FILE      Path to JSON file containing request headers
-  --limit N          Limit the number of segments to download
-  --concurrent N     Number of concurrent downloads (default: 10)
-  --ffmpeg PATH      Path to ffmpeg executable (default: uses ffmpeg from system PATH)
+  --segments-dir DIR          Directory to store segments (default: segments)         
+  --force-ext EXT             Force specific extension for segments (e.g., .ts)         
+  --force-url-prefix PREFIX   Force URL prefix for segments                             
+  --cache FILE                Path to cache parsed m3u8                                 
+  --filelist FILE             Path for ffmpeg filelist (default: filelist.txt)        
+  --combine OUTPUT            Combine segments into OUTPUT file after download          
+  --force-combine OUTPUT      Combine segments even if some failed to download         
+  --cleanup                   Remove segments directory after successful combination     
+  --fix DIR                   Fix missing segments in the specified directory (default: segments)
+  --verbose, -v               Enable verbose output                                    
+  --headers FILE              Path to JSON file containing request headers              
+  --limit N                   Limit the number of segments to download                  
+  --concurrent N              Number of concurrent downloads (default: 10)             
+  --ffmpeg PATH               Path to ffmpeg executable (default: uses ffmpeg from system PATH)
 ```
 
 ## Headers File Format
