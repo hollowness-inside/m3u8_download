@@ -103,7 +103,13 @@ The headers file should be a JSON file containing key-value pairs of HTTP header
 
 ## Helpful Tips
 
+### Getting Website Headers
+
 The easiest way to get headers is to use a browser's "Inspect" feature and copy any request on the website as `Copy as cURL (bash)`. Then, go to `https://curlconverter.com/json/` and paste the cURL there. You will see the "headers" field in the resulting JSON.
+
+### Getting Stream URLs
+
+This Google Chrome extension, [The Stream Detector](https://chromewebstore.google.com/detail/the-stream-detector/iakkmkmhhckcmoiibcfjnooibphlobak), captures all stream URLs on a website.
 
 ## Requirements
 
