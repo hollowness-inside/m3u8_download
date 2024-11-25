@@ -1,2 +1,3 @@
 segments/
 filelist.txt
+*.pyc
