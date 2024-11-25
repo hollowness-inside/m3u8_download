@@ -2,7 +2,7 @@ import re
 import asyncio
 import argparse
 import shutil
-from os import path, makedirs
+from os import path, makedirs, listdir
 
 from aiohttp import ClientSession, TCPConnector
 
@@ -49,6 +49,12 @@ def parse_args():
         help="Remove segments directory after successful combination",
     )
     parser.add_argument(
+        "--fix",
+        metavar="DIR",
+        default="segments",
+        help="Fix missing segments in the specified directory",
+    )
+    parser.add_argument(
         "--verbose", "-v", action="store_true", help="Enable verbose output"
     )
     parser.add_argument(
@@ -74,10 +80,31 @@ async def main(args: argparse.Namespace) -> None:
     # Configure verbose printing
     Config.set_verbose(args.verbose)
 
-    # Create segments directory
-    makedirs(args.segments_dir, exist_ok=True)
-
     headers = load_headers(args.headers)
+
+    # Fix mode
+    if args.fix:
+        if not path.exists(args.fix):
+            print(f"Directory {args.fix} does not exist")
+            return
+
+        # Get extension from first file if not forced
+        if not args.force_ext:
+            files = []
+            for f in listdir(args.fix):
+                if path.isfile(path.join(args.fix, f)):
+                    files.append(f)
+
+            if not files:
+                print("No files found in the directory")
+                return
+            args.force_ext = path.splitext(files[0])[1]
+
+        # Use fix directory as segments directory
+        args.segments_dir = args.fix
+    else:
+        # Create segments directory in normal mode
+        makedirs(args.segments_dir, exist_ok=True)
 
     # Configure connection pooling and reuse
     connector = TCPConnector(
@@ -99,6 +126,19 @@ async def main(args: argparse.Namespace) -> None:
         if args.limit:
             vprint(f"Limiting download to first {args.limit} segments")
             segments = segments[: args.limit]
+
+        # Filter out already downloaded segments
+        if args.fix:
+            existing_segments = set()
+            for f in listdir(args.segments_dir):
+                if path.isfile(path.join(args.segments_dir, f)):
+                    existing_segments.add(path.splitext(f)[0])
+
+            segments = [s for s in segments if s["filename"] not in existing_segments]
+            if not segments:
+                print("All segments are already downloaded")
+                return
+            vprint(f"Found {len(segments)} segments to fix")
 
         # Create semaphore for concurrency control
         semaphore = asyncio.Semaphore(args.concurrent)
