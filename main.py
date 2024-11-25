@@ -30,7 +30,7 @@ def parse_args():
         "--force-url-prefix", default="", help="Force URL prefix for segments"
     )
     parser.add_argument(
-        "--segments-cache", help="Path to cache parsed m3u8 (disabled by default)"
+        "--cache", help="Path to cache parsed m3u8 (not stored by default)"
     )
     parser.add_argument(
         "--filelist",
@@ -79,7 +79,7 @@ async def main(args: argparse.Namespace) -> None:
         segments = await download_m3u8(
             session,
             args.url,
-            args.segments_cache,
+            args.cache,
             force_url_prefix=args.force_url_prefix,
             force_ext=args.force_ext,
         )
