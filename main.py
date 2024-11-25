@@ -18,8 +18,6 @@ from m3u8_downloader import (
 def parse_args():
     parser = argparse.ArgumentParser(description='Download and combine M3U8 segments')
     parser.add_argument('url', help='URL to the m3u8 file')
-    parser.add_argument('--output', '-o', default='output.mp4',
-                      help='Output file path (default: output.mp4)')
     parser.add_argument('--segments-dir', default='segments',
                       help='Directory to store segments (default: segments)')
     parser.add_argument('--force-ext', 
@@ -30,10 +28,10 @@ def parse_args():
                       help='Path to cache parsed m3u8 (disabled by default)')
     parser.add_argument('--filelist', default='filelist.txt',
                       help='Path for ffmpeg filelist (default: filelist.txt)')
-    parser.add_argument('--combine', action='store_true',
-                      help='Combine segments into a single file after download')
-    parser.add_argument('--force-combine', action='store_true',
-                      help='Combine segments even if some failed to download')
+    parser.add_argument('--combine', metavar='OUTPUT',
+                      help='Combine segments into OUTPUT file after download')
+    parser.add_argument('--force-combine', metavar='OUTPUT',
+                      help='Combine segments into OUTPUT file even if some failed to download')
     parser.add_argument('--cleanup', action='store_true',
                       help='Remove segments directory after successful combination')
     parser.add_argument('--verbose', '-v', action='store_true',
@@ -77,8 +75,8 @@ async def main(args: argparse.Namespace) -> None:
 
         # Stop here if no combination is requested (neither --combine nor --force-combine)
         # or if there are failures and force combine is not set
-        should_combine = args.combine or args.force_combine
-        if not should_combine or (not args.force_combine and not all(successful_downloads)):
+        output_file = args.force_combine or args.combine
+        if not output_file or (not args.force_combine and not all(successful_downloads)):
             return
 
         results.sort(key=lambda x: int(
@@ -90,7 +88,7 @@ async def main(args: argparse.Namespace) -> None:
                     f.write(f"file {fname}\n")
 
         try:
-            combine_segments(args.filelist, args.output, remove_filelist=args.cleanup)
+            combine_segments(args.filelist, output_file, remove_filelist=args.cleanup)
             if args.cleanup:
                 # Only cleanup if combination was successful
                 vprint(f"Cleaning up segments directory {args.segments_dir}...")
