@@ -28,9 +28,7 @@ async def download_m3u8(
             text = await response.text()
 
             segments = parse_m3u8(
-                m3u8_data=text,
-                force_url_prefix=force_url_prefix,
-                force_ext=force_ext
+                m3u8_data=text, force_url_prefix=force_url_prefix, force_ext=force_ext
             )
 
             if segments_cache:
@@ -43,12 +41,14 @@ async def download_m3u8(
         raise Exception("Failed to parse .m3u8")
 
 
-async def download_segment(session: ClientSession, segment: dict[str, str], segments_dir: str) -> Coroutine[Any, Any, bool]:
+async def download_segment(
+    session: ClientSession, segment: dict[str, str], segments_dir: str
+) -> Coroutine[Any, Any, bool]:
     vprint(f"Downloading segment {segment['filename']}...")
 
-    fname = segment['filename']
-    url = segment['url']
-    fout = path.join(segments_dir, fname).replace('\\', '/')
+    fname = segment["filename"]
+    url = segment["url"]
+    fout = path.join(segments_dir, fname).replace("\\", "/")
 
     try:
         async with session.get(url) as response:
@@ -56,7 +56,7 @@ async def download_segment(session: ClientSession, segment: dict[str, str], segm
 
             content = await response.read()
 
-            with open(fout, 'wb') as f:
+            with open(fout, "wb") as f:
                 f.write(content)
 
             return [True, fout]

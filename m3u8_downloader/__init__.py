@@ -4,11 +4,11 @@ from .combiner import combine_segments
 from .utils import load_headers, Config, vprint
 
 __all__ = [
-    'download_m3u8',
-    'download_segment',
-    'parse_m3u8',
-    'combine_segments',
-    'load_headers',
-    'Config',
-    'vprint'
+    "download_m3u8",
+    "download_segment",
+    "parse_m3u8",
+    "combine_segments",
+    "load_headers",
+    "Config",
+    "vprint",
 ]
