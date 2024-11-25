@@ -16,7 +16,6 @@ def parse_m3u8(m3u8_data: str, force_url_prefix: str = "", force_ext: str | None
                 extension = path.splitext(url)[1]
 
             key = f'{index}{extension}'
-            print('!!!! KEY: ', key, extension)
             index += 1
 
             segments.append({
