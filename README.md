@@ -116,7 +116,3 @@ This Google Chrome extension, [The Stream Detector](https://chromewebstore.googl
 - Python 3.6+
 - aiohttp
 - ffmpeg (in PATH or specified via --ffmpeg)
-
-## License
-
-This project is open source and available under the MIT License.
