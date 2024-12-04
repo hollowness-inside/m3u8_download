@@ -2,6 +2,9 @@
 
 Downloads segments from .m3u8 files and combines them into a single video using ffmpeg.
 
+# DISCONTINUED!
+I have discontinued working on this tool, as I have [rewritten it in Go](https://github.com/hollowness-inside/m3u8). Moving forward, my focus will be solely on the Go version. You should check it out as well, because the Go version is much faster at downloading.
+
 ## Features
 
 - **Extremely Fast**: Utilizes [asyncio](https://docs.python.org/3/library/asyncio.html) and concurrent downloads
